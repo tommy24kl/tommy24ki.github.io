@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tommaso Bultrini</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Courier+Prime:wght@400;700&display=swap');
+
+  :root {
+    --void: #000810;
+    --dark: #04030a;
+    --dense: #06040e;
+    --node: #26215C;
+    --node-bright: #534AB7;
+    --creature: #5DCAA5;
+    --creature-dim: #1D9E75;
+    --spiral: #AFA9EC;
+    --spiral-dim: #7F77DD;
+    --text-primary: #e8e4f0;
+    --text-dim: #9FE1CB;
+    --text-ghost: #534AB7;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    cursor: crosshair;
+  }
+
+  /* Canvas background */
+  canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 40px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 80px;
+    animation: fadeUp 2s ease forwards;
+    opacity: 0;
+  }
+
+  .label {
+    font-family: 'Courier Prime', monospace;
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--text-ghost);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    opacity: 0.7;
+  }
+
+  .name {
+    font-size: clamp(42px, 8vw, 90px);
+    font-weight: 300;
+    letter-spacing: -1px;
+    line-height: 1;
+    color: var(--text-primary);
+    position: relative;
+  }
+
+  .name span {
+    color: var(--creature);
+    font-style: italic;
+  }
+
+  .tagline {
+    margin-top: 24px;
+    font-size: 14px;
+    font-style: italic;
+    color: var(--spiral);
+    opacity: 0.6;
+    letter-spacing: 1px;
+  }
+
+  /* Divider */
+  .divider {
+    width: 1px;
+    height: 60px;
+    background: linear-gradient(to bottom, transparent, var(--node-bright), transparent);
+    margin: 0 auto 60px;
+    animation: fadeUp 2s ease 0.4s forwards;
+    opacity: 0;
+  }
+
+  /* Cards */
+  .cards {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    max-width: 480px;
+    animation: fadeUp 2s ease 0.8s forwards;
+    opacity: 0;
+  }
+
+  .card {
+    border: 1px solid rgba(83, 74, 183, 0.15);
+    padding: 24px 32px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.4s ease, background 0.4s ease;
+    background: rgba(4, 3, 10, 0.6);
+    backdrop-filter: blur(4px);
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--node-bright);
+    transform: scaleY(0);
+    transform-origin: bottom;
+    transition: transform 0.4s ease;
+  }
+
+  .card:hover {
+    border-color: rgba(83, 74, 183, 0.4);
+    background: rgba(38, 33, 92, 0.1);
+  }
+
+  .card:hover::before {
+    transform: scaleY(1);
+  }
+
+  .card-type {
+    font-family: 'Courier Prime', monospace;
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--text-ghost);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    opacity: 0.6;
+  }
+
+  .card-value {
+    font-size: 18px;
+    font-weight: 300;
+    color: var(--text-primary);
+    letter-spacing: 0.5px;
+  }
+
+  .card-value a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+
+  .card-value a:hover {
+    color: var(--creature);
+  }
+
+  /* Node indicator */
+  .node {
+    position: absolute;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--node-bright);
+    opacity: 0.4;
+    transition: opacity 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .card:hover .node {
+    opacity: 1;
+    box-shadow: 0 0 12px var(--node-bright);
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 80px;
+    text-align: center;
+    animation: fadeUp 2s ease 1.2s forwards;
+    opacity: 0;
+  }
+
+  .axiom {
+    font-size: 12px;
+    font-style: italic;
+    color: var(--text-ghost);
+    opacity: 0.5;
+    letter-spacing: 1px;
+    line-height: 2;
+  }
+
+  .axiom strong {
+    color: var(--spiral-dim);
+    font-style: normal;
+    font-weight: 400;
+  }
+
+  /* Hole indicator — buchi della realtà */
+  .holes {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .hole {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(83, 74, 183, 0.12);
+    animation: pulse 4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 0.08; transform: scale(1.05); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Cursor dot */
+  .cursor-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--creature);
+    position: fixed;
+    pointer-events: none;
+    z-index: 999;
+    transition: transform 0.1s ease;
+    mix-blend-mode: screen;
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor-dot" id="cursorDot"></div>
+
+<canvas id="spiral"></canvas>
+
+<!-- Buchi statici decorativi -->
+<div class="holes">
+  <div class="hole" style="width:180px;height:180px;top:10%;left:5%;animation-delay:0s;animation-duration:6s;"></div>
+  <div class="hole" style="width:80px;height:80px;top:25%;right:8%;animation-delay:1.5s;animation-duration:5s;"></div>
+  <div class="hole" style="width:120px;height:120px;bottom:20%;left:12%;animation-delay:3s;animation-duration:7s;"></div>
+  <div class="hole" style="width:50px;height:50px;bottom:35%;right:15%;animation-delay:0.8s;animation-duration:4.5s;"></div>
+  <div class="hole" style="width:200px;height:200px;top:50%;right:2%;animation-delay:2s;animation-duration:8s;"></div>
+</div>
+
+<div class="container">
+
+  <div class="header">
+    <div class="label">entità in transito</div>
+    <h1 class="name">Tommaso <span>Bultrini</span></h1>
+    <p class="tagline">si infiltra dove il reale si piega su se stesso</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="cards">
+
+    <div class="card">
+      <div class="card-type">posta</div>
+      <div class="card-value">
+        <a href="mailto:tommasobultrini20@gmail.com">tommasobultrini20@gmail.com</a>
+      </div>
+      <div class="node"></div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    <p class="axiom">
+      <strong>esistere è sufficiente</strong><br>
+      l'esistenza è irreversibile per legge strutturale<br>
+      la luce non conosce passato né futuro
+    </p>
+  </div>
+
+</div>
+
+<script>
+// Cursor
+const dot = document.getElementById('cursorDot');
+document.addEventListener('mousemove', e => {
+  dot.style.left = e.clientX - 2 + 'px';
+  dot.style.top = e.clientY - 2 + 'px';
+});
+
+// Spiral canvas
+const canvas = document.getElementById('spiral');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// Nodes — buchi della realtà
+const nodes = [];
+for (let i = 0; i < 28; i++) {
+  nodes.push({
+    x: Math.random() * window.innerWidth,
+    y: Math.random() * window.innerHeight,
+    r: Math.random() * 1.5 + 0.3,
+    opacity: Math.random() * 0.5 + 0.1,
+    pulse: Math.random() * Math.PI * 2,
+    speed: Math.random() * 0.008 + 0.003
+  });
+}
+
+// Spiral params
+let t = 0;
+const cx = () => canvas.width / 2;
+const cy = () => canvas.height / 2;
+
+function drawSpiral() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Dense dark background texture
+  ctx.fillStyle = 'rgba(0, 8, 16, 0.15)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Draw spiral
+  const spiralPoints = [];
+  for (let a = 0; a < Math.PI * 14; a += 0.04) {
+    const radius = a * 22;
+    const px = cx() + Math.cos(a + t * 0.12) * radius;
+    const py = cy() + Math.sin(a + t * 0.12) * radius * 0.55;
+    spiralPoints.push({x: px, y: py, a});
+  }
+
+  // Draw spiral path
+  for (let i = 1; i < spiralPoints.length; i++) {
+    const p = spiralPoints[i];
+    const prev = spiralPoints[i-1];
+    const progress = i / spiralPoints.length;
+    const alpha = (1 - progress) * 0.18 + 0.02;
+
+    ctx.beginPath();
+    ctx.moveTo(prev.x, prev.y);
+    ctx.lineTo(p.x, p.y);
+    ctx.strokeStyle = `rgba(83, 74, 183, ${alpha})`;
+    ctx.lineWidth = 0.6;
+    ctx.stroke();
+  }
+
+  // Draw nodes (buchi)
+  nodes.forEach(n => {
+    n.pulse += n.speed;
+    const pulse = Math.sin(n.pulse);
+    const op = n.opacity * (0.6 + pulse * 0.4);
+
+    // Outer ring
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, n.r * 3 + pulse * 1.5, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(83, 74, 183, ${op * 0.3})`;
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+
+    // Core
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(175, 169, 236, ${op})`;
+    ctx.fill();
+  });
+
+  // Connections between close nodes
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const dx = nodes[i].x - nodes[j].x;
+      const dy = nodes[i].y - nodes[j].y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < 160) {
+        const alpha = (1 - dist / 160) * 0.06;
+        ctx.beginPath();
+        ctx.moveTo(nodes[i].x, nodes[i].y);
+        ctx.lineTo(nodes[j].x, nodes[j].y);
+        ctx.strokeStyle = `rgba(83, 74, 183, ${alpha})`;
+        ctx.lineWidth = 0.4;
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Ceratura — creature at center, subtle
+  const cx_ = cx(), cy_ = cy();
+  const glow = ctx.createRadialGradient(cx_, cy_, 0, cx_, cy_, 60);
+  glow.addColorStop(0, 'rgba(93, 202, 165, 0.04)');
+  glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.beginPath();
+  ctx.arc(cx_, cy_, 60, 0, Math.PI * 2);
+  ctx.fillStyle = glow;
+  ctx.fill();
+
+  t += 0.008;
+  requestAnimationFrame(drawSpiral);
+}
+
+drawSpiral();
+
+// Mouse interaction — nodes react to cursor
+document.addEventListener('mousemove', e => {
+  nodes.forEach(n => {
+    const dx = e.clientX - n.x;
+    const dy = e.clientY - n.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist < 80) {
+      n.opacity = Math.min(0.9, n.opacity + 0.02);
+    } else {
+      n.opacity = Math.max(0.1, n.opacity - 0.002);
+    }
+  });
+});
+</script>
+
+</body>
+</html>
